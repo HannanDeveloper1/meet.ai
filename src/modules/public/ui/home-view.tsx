@@ -12,7 +12,7 @@ export default function HomeView() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col p-4 gap-y-4 items-center justify-center min-h-svh">
+    <div className="flex flex-1 flex-col p-4 gap-y-4 items-center justify-center min-h-svh">
       <p className="text-muted-foreground text-base">Logged In as,</p>
       {isPending ? (
         <>
