@@ -32,10 +32,10 @@ export const SignInView = () => {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{
     isSubmitting: boolean;
-    type: "email" | "google" | "github";
+    type: "email" | "google" | "github" | null;
   }>({
     isSubmitting: false,
-    type: "email",
+    type: null,
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,10 +49,11 @@ export const SignInView = () => {
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setError(null);
 
-    const { error } = await authClient.signIn.email(
+    await authClient.signIn.email(
       {
         email: data.email,
         password: data.password,
+        callbackURL: "/",
       },
       {
         onSuccess: () => {
@@ -70,7 +71,34 @@ export const SignInView = () => {
         onResponse: () => {
           setPending({
             isSubmitting: false,
-            type: "email",
+            type: null,
+          });
+        },
+      }
+    );
+  };
+
+  const oAuth = async ({ provider }: { provider: "google" | "github" }) => {
+    setError(null);
+    await authClient.signIn.social(
+      {
+        provider,
+        callbackURL: "/",
+      },
+      {
+        onError: ({ error }) => {
+          setError(error.message);
+        },
+        onRequest: () => {
+          setPending({
+            isSubmitting: true,
+            type: provider,
+          });
+        },
+        onResponse: () => {
+          setPending({
+            isSubmitting: false,
+            type: null,
           });
         },
       }
@@ -157,12 +185,13 @@ export const SignInView = () => {
                     Or continue with
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <Button
                     variant={"outline"}
                     type="button"
                     className="w-full"
                     disabled={pending.isSubmitting}
+                    onClick={() => oAuth({ provider: "google" })}
                   >
                     {pending.isSubmitting && pending.type === "google" ? (
                       <Loader2Icon className="h-4 w-4 animate-spin" />
@@ -176,6 +205,7 @@ export const SignInView = () => {
                     type="button"
                     className="w-full"
                     disabled={pending.isSubmitting}
+                    onClick={() => oAuth({ provider: "github" })}
                   >
                     {pending.isSubmitting && pending.type === "github" ? (
                       <Loader2Icon className="h-4 w-4 animate-spin" />

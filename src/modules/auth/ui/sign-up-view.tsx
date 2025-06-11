@@ -36,13 +36,16 @@ const formSchema = z
       .string()
       .min(1, { message: "Password is required" })
       .min(8, { message: "Password must be at least 8 characters" })
-      .regex(
-        /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
-        {
-          message:
-            "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-        }
-      ),
+      .regex(/[A-Z]/, {
+        message: "Password must contain at least one uppercase letter",
+      })
+      .regex(/[a-z]/, {
+        message: "Password must contain at least one lowercase letter",
+      })
+      .regex(/\d/, { message: "Password must contain at least one number" })
+      .regex(/[@$!%*#?&]/, {
+        message: "Password must contain at least one special character",
+      }),
     confirmPassword: z.string().min(1, { message: "Password is required" }),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -55,10 +58,10 @@ export const SignUpView = () => {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{
     isSubmitting: boolean;
-    type: "email" | "google" | "github";
+    type: "email" | "google" | "github" | null;
   }>({
     isSubmitting: false,
-    type: "email",
+    type: null,
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -79,6 +82,7 @@ export const SignUpView = () => {
         name: data.name,
         email: data.email,
         password: data.password,
+        callbackURL: "/",
       },
       {
         onSuccess: () => {
@@ -97,6 +101,33 @@ export const SignUpView = () => {
           setPending({
             isSubmitting: false,
             type: "email",
+          });
+        },
+      }
+    );
+  };
+
+  const oAuth = async ({ provider }: { provider: "google" | "github" }) => {
+    setError(null);
+    await authClient.signIn.social(
+      {
+        provider,
+        callbackURL: "/",
+      },
+      {
+        onError: ({ error }) => {
+          setError(error.message);
+        },
+        onRequest: () => {
+          setPending({
+            isSubmitting: true,
+            type: provider,
+          });
+        },
+        onResponse: () => {
+          setPending({
+            isSubmitting: false,
+            type: null,
           });
         },
       }
@@ -221,12 +252,13 @@ export const SignUpView = () => {
                     Or continue with
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <Button
                     variant={"outline"}
                     type="button"
                     className="w-full"
                     disabled={pending.isSubmitting}
+                    onClick={() => oAuth({ provider: "google" })}
                   >
                     {pending.isSubmitting && pending.type === "google" ? (
                       <Loader2Icon className="h-4 w-4 animate-spin" />
@@ -240,6 +272,7 @@ export const SignUpView = () => {
                     type="button"
                     className="w-full"
                     disabled={pending.isSubmitting}
+                    onClick={() => oAuth({ provider: "github" })}
                   >
                     {pending.isSubmitting && pending.type === "github" ? (
                       <Loader2Icon className="h-4 w-4 animate-spin" />
