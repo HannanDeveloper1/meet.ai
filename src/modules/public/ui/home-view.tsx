@@ -24,12 +24,9 @@ export default function HomeView() {
       ) : (
         <>
           <Avatar className="w-16 h-16">
-            <AvatarImage
-              src={session?.user.image ?? ""}
-              alt={session?.user.name ?? ""}
-            />
+            <AvatarImage src={session?.user.image!} alt={session?.user.name!} />
             <AvatarFallback className="text-xl">
-              {session?.user.name?.charAt(0) ?? ""}
+              {session?.user.name?.charAt(0)!}
             </AvatarFallback>
           </Avatar>
           <h3 className="text-2xl font-bold">{session?.user.name}</h3>
